@@ -21,7 +21,7 @@ impl PedalsPlotWidget {
                 [Inputs {
                     id: 0,
                     throttle: 0.0,
-                    brake: 100.0,
+                    brake: 200.0,
                 }; 100],
             ),
         }
@@ -32,13 +32,14 @@ impl PedalsPlotWidget {
         self.inputs.pop_front();
     }
 
-    fn throttle_path(&self) -> impl Iterator<Item = PathEl> + '_ {
+    fn throttle_path(&self, height: f64) -> impl Iterator<Item = PathEl> + '_ {
         let move_to = [PathEl::MoveTo(Point::new(
             0.,
             self.inputs.front().unwrap().throttle,
         ))];
-        let throttle_inputs = self.inputs.iter().enumerate().map(|(i, v)| {
-            let y = 100. - v.throttle;
+        let scale = scale(height);
+        let throttle_inputs = self.inputs.iter().enumerate().map(move |(i, v)| {
+            let y = (100. - v.throttle) * scale;
             let x = i as f64;
             PathEl::LineTo(Point::new(x, y))
         });
@@ -47,13 +48,14 @@ impl PedalsPlotWidget {
         output
     }
 
-    fn brake_path(&self) -> impl Iterator<Item = PathEl> + '_ {
+    fn brake_path(&self, height: f64) -> impl Iterator<Item = PathEl> + '_ {
         let move_to = [PathEl::MoveTo(Point::new(
             0.,
             self.inputs.front().unwrap().brake,
         ))];
-        let throttle_inputs = self.inputs.iter().enumerate().map(|(i, v)| {
-            let y = 100. - v.brake;
+        let scale = scale(height);
+        let throttle_inputs = self.inputs.iter().enumerate().map(move |(i, v)| {
+            let y = (100. - v.brake) * scale;
             let x = i as f64;
             PathEl::LineTo(Point::new(x, y))
         });
@@ -61,6 +63,10 @@ impl PedalsPlotWidget {
         let output = move_to.into_iter().chain(throttle_inputs);
         output
     }
+}
+
+fn scale(height: f64) -> f64 {
+    height / 100.
 }
 
 impl PedalsPlotWidget {
@@ -106,7 +112,8 @@ impl Widget for PedalsPlotWidget {
         let stroke = Stroke::new(border_width).with_join(Join::Bevel);
         let throttle_brush_color = Brush::Solid(Color::from_rgb8(0, 255, 0));
 
-        let throttle_path = BezPath::from_iter(self.throttle_path());
+        let size = ctx.size();
+        let throttle_path = BezPath::from_iter(self.throttle_path(size.height));
         scene.stroke(
             &stroke,
             identity,
@@ -116,7 +123,7 @@ impl Widget for PedalsPlotWidget {
         );
         let brake_brush_color = Brush::Solid(Color::from_rgb8(255, 0, 0));
 
-        let brake_path = BezPath::from_iter(self.brake_path());
+        let brake_path = BezPath::from_iter(self.brake_path(size.height));
         scene.stroke(&stroke, identity, brake_brush_color, None, &brake_path);
     }
 
