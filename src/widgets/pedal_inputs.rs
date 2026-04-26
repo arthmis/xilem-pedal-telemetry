@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use masonry::{
     accesskit::Role,
     core::{ChildrenIds, HasProperty, Widget, WidgetMut},
-    kurbo::{BezPath, Join, PathEl, Point, Stroke},
+    kurbo::{BezPath, Join, Line, PathEl, Point, Size, Stroke},
     peniko::{Brush, Fill},
 };
 use xilem::{Affine, Color, style::Padding};
@@ -21,15 +21,16 @@ impl PedalsPlotWidget {
                 [Inputs {
                     id: 0,
                     throttle: 0.0,
-                    brake: 200.0,
-                }; 100],
+                    brake: 0.0,
+                }; 1000],
             ),
         }
     }
 
-    pub fn update(&mut self, inputs: Inputs) {
-        self.inputs.push_back(inputs);
-        self.inputs.pop_front();
+    pub fn update(this: &mut WidgetMut<'_, Self>, inputs: Inputs) {
+        this.widget.inputs.push_back(inputs);
+        this.widget.inputs.pop_front();
+        this.ctx.request_render();
     }
 
     fn throttle_path(&self, height: f64) -> impl Iterator<Item = PathEl> + '_ {
@@ -63,16 +64,51 @@ impl PedalsPlotWidget {
         let output = move_to.into_iter().chain(throttle_inputs);
         output
     }
+
+    fn y_markers(&self, max_size: Size) -> BezPath {
+        let base = |line_height| max_size.height / 5. * line_height;
+        let heights = [base(1.), base(2.), base(3.), base(4.), base(5.)];
+
+        let mut path = BezPath::new();
+        for height in heights {
+            path.move_to(Point::new(0., height));
+            path.line_to(Point::new(max_size.width, height));
+        }
+
+        path
+    }
+
+    fn scale_width(&mut self, max_width: f64) {
+        let max_width = max_width as usize;
+
+        if max_width == self.inputs.len() {
+            return;
+        }
+
+        if max_width > self.inputs.len() {
+            let amount_to_add = max_width - self.inputs.len();
+            for _ in 0..amount_to_add {
+                self.inputs.push_back(Inputs {
+                    id: 0,
+                    throttle: 0.,
+                    brake: 0.,
+                });
+            }
+            self.inputs.reserve(amount_to_add);
+            return;
+        }
+
+        let amount_to_drain = self.inputs.len() - max_width;
+
+        {
+            self.inputs.drain(0..amount_to_drain);
+        }
+        self.inputs.reserve(self.inputs.len());
+    }
 }
 
 fn scale(height: f64) -> f64 {
     height / 100.
-}
-
-impl PedalsPlotWidget {
-    pub fn redraw(this: &mut WidgetMut<'_, Self>) {
-        this.ctx.request_render();
-    }
 }
 
 impl HasProperty<Padding> for PedalsPlotWidget {}
@@ -104,27 +140,47 @@ impl Widget for PedalsPlotWidget {
         let identity = Affine::IDENTITY;
 
         let fill_style = Fill::NonZero;
-        let brush = Brush::Solid(Color::from_rgb8(33, 33, 33));
+        let brush = Brush::Solid(Color::from_rgb8(22, 22, 22));
         let rect = ctx.bounding_rect();
         scene.fill(fill_style, identity, brush, None, &rect);
 
-        let border_width = 1.0;
+        let brush_transformation = None;
+
+        let max_size = ctx.size();
+        let y_marker_color = Brush::Solid(Color::from_rgb8(180, 180, 180));
+        let stroke = Stroke::new(0.5).with_join(Join::Bevel);
+        let y_axis_markers = self.y_markers(max_size);
+        scene.stroke(
+            &stroke,
+            identity,
+            y_marker_color,
+            brush_transformation,
+            &y_axis_markers,
+        );
+
+        self.scale_width(max_size.width);
+        let border_width = 2.0;
         let stroke = Stroke::new(border_width).with_join(Join::Bevel);
         let throttle_brush_color = Brush::Solid(Color::from_rgb8(0, 255, 0));
 
-        let size = ctx.size();
-        let throttle_path = BezPath::from_iter(self.throttle_path(size.height));
+        let throttle_path = BezPath::from_iter(self.throttle_path(max_size.height));
         scene.stroke(
             &stroke,
             identity,
             throttle_brush_color,
-            None,
+            brush_transformation,
             &throttle_path,
         );
-        let brake_brush_color = Brush::Solid(Color::from_rgb8(255, 0, 0));
 
-        let brake_path = BezPath::from_iter(self.brake_path(size.height));
-        scene.stroke(&stroke, identity, brake_brush_color, None, &brake_path);
+        let brake_brush_color = Brush::Solid(Color::from_rgb8(255, 0, 0));
+        let brake_path = BezPath::from_iter(self.brake_path(max_size.height));
+        scene.stroke(
+            &stroke,
+            identity,
+            brake_brush_color,
+            brush_transformation,
+            &brake_path,
+        );
     }
 
     fn accessibility_role(&self) -> masonry::accesskit::Role {

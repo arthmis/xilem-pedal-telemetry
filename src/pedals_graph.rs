@@ -47,20 +47,16 @@ impl<State: 'static, Action: 'static> View<State, Action, ViewCtx> for PedalsPlo
         &self,
         prev: &Self,
         _view_state: &mut Self::ViewState,
-        _ctx: &mut ViewCtx,
+        ctx: &mut ViewCtx,
         mut element: xilem::core::Mut<'_, Self::Element>,
         _app_state: &mut State,
     ) {
         // if let Ok(inputs) = self.receiver.try_recv() {
 
         if prev.inputs != self.inputs {
-            dbg!(prev.inputs, self.inputs);
-            element.widget.update(self.inputs);
-            PedalsPlotWidget::redraw(&mut element);
+            PedalsPlotWidget::update(&mut element, self.inputs);
         }
-        // PedalsPlotWidget::redraw(&mut element);
-        // tracing::debug!("{:?}", inputs);
-        // dbg!(inputs);
+
         // }
     }
 
@@ -76,8 +72,8 @@ impl<State: 'static, Action: 'static> View<State, Action, ViewCtx> for PedalsPlo
     fn message(
         &self,
         _view_state: &mut Self::ViewState,
-        message: &mut xilem::core::MessageContext,
-        element: xilem::core::Mut<'_, Self::Element>,
+        _message: &mut xilem::core::MessageContext,
+        _element: xilem::core::Mut<'_, Self::Element>,
         _app_state: &mut State,
     ) -> xilem::core::MessageResult<Action> {
         MessageResult::Nop
