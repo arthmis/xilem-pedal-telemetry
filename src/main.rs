@@ -7,11 +7,11 @@ use std::{collections::VecDeque, thread, time::Duration};
 use compio::time::Interval;
 use futures::{StreamExt, pin_mut};
 use xilem::{
-    AppState, EventLoop, WidgetView, WindowOptions, Xilem,
+    AppState, Color, EventLoop, WidgetView, WindowOptions, Xilem,
     core::fork,
     dpi::LogicalSize,
-    style::{Padding, Style},
-    view::{flex_col, task, task_raw},
+    style::Style,
+    view::{CrossAxisAlignment, MainAxisAlignment, flex_col, task, task_raw},
     winit::window::WindowLevel,
 };
 
@@ -39,7 +39,7 @@ fn app_logic(state: &mut State) -> impl WidgetView<State> + use<> {
         // state.receiver.clone(),
         state.inputs,
     )
-    .padding(Padding::all(12.));
+    .padding(8.);
 
     let receiver = state.receiver.clone();
     let task = task_raw(
@@ -61,7 +61,13 @@ fn app_logic(state: &mut State) -> impl WidgetView<State> + use<> {
             state.inputs = inputs;
         },
     );
-    fork(flex_col(graph), task)
+    fork(
+        flex_col(graph)
+            .main_axis_alignment(MainAxisAlignment::Center)
+            .cross_axis_alignment(CrossAxisAlignment::Center)
+            .background_color(Color::from_rgb8(22, 22, 22)),
+        task,
+    )
     // flex_col(graph)
 }
 

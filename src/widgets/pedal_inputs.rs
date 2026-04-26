@@ -10,6 +10,8 @@ use xilem::{Affine, Color, style::Padding};
 
 use crate::Inputs;
 
+const PEDAL_LIMIT: f64 = 100.;
+
 pub struct PedalsPlotWidget {
     inputs: VecDeque<Inputs>,
 }
@@ -34,13 +36,13 @@ impl PedalsPlotWidget {
     }
 
     fn throttle_path(&self, height: f64) -> impl Iterator<Item = PathEl> + '_ {
+        let scale = scale(height);
         let move_to = [PathEl::MoveTo(Point::new(
             0.,
-            self.inputs.front().unwrap().throttle,
+            (PEDAL_LIMIT - self.inputs.front().unwrap().throttle) * scale,
         ))];
-        let scale = scale(height);
         let throttle_inputs = self.inputs.iter().enumerate().map(move |(i, v)| {
-            let y = (100. - v.throttle) * scale;
+            let y = (PEDAL_LIMIT - v.throttle) * scale;
             let x = i as f64;
             PathEl::LineTo(Point::new(x, y))
         });
@@ -50,13 +52,13 @@ impl PedalsPlotWidget {
     }
 
     fn brake_path(&self, height: f64) -> impl Iterator<Item = PathEl> + '_ {
+        let scale = scale(height);
         let move_to = [PathEl::MoveTo(Point::new(
             0.,
-            self.inputs.front().unwrap().brake,
+            (PEDAL_LIMIT - self.inputs.front().unwrap().brake) * scale,
         ))];
-        let scale = scale(height);
         let throttle_inputs = self.inputs.iter().enumerate().map(move |(i, v)| {
-            let y = (100. - v.brake) * scale;
+            let y = (PEDAL_LIMIT - v.brake) * scale;
             let x = i as f64;
             PathEl::LineTo(Point::new(x, y))
         });
@@ -108,7 +110,7 @@ impl PedalsPlotWidget {
 }
 
 fn scale(height: f64) -> f64 {
-    height / 100.
+    height / PEDAL_LIMIT
 }
 
 impl HasProperty<Padding> for PedalsPlotWidget {}
@@ -125,10 +127,11 @@ impl Widget for PedalsPlotWidget {
     fn layout(
         &mut self,
         _ctx: &mut masonry::core::LayoutCtx<'_>,
-        _props: &mut masonry::core::PropertiesMut<'_>,
+        props: &mut masonry::core::PropertiesMut<'_>,
         bc: &masonry::core::BoxConstraints,
     ) -> masonry::kurbo::Size {
-        bc.max()
+        let padding = props.get::<Padding>();
+        padding.layout_down(*bc).max()
     }
 
     fn paint(
@@ -141,7 +144,7 @@ impl Widget for PedalsPlotWidget {
 
         let fill_style = Fill::NonZero;
         let brush = Brush::Solid(Color::from_rgb8(22, 22, 22));
-        let rect = ctx.bounding_rect();
+        let rect = ctx.size().to_rect();
         scene.fill(fill_style, identity, brush, None, &rect);
 
         let brush_transformation = None;
