@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, marker::PhantomData};
+use std::marker::PhantomData;
 
 use xilem::{
     Pod, ViewCtx,
@@ -47,7 +47,7 @@ impl<State: 'static, Action: 'static> View<State, Action, ViewCtx> for PedalsPlo
         &self,
         prev: &Self,
         _view_state: &mut Self::ViewState,
-        ctx: &mut ViewCtx,
+        _ctx: &mut ViewCtx,
         mut element: xilem::core::Mut<'_, Self::Element>,
         _app_state: &mut State,
     ) {

@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use masonry::{
     accesskit::Role,
     core::{ChildrenIds, HasProperty, Widget, WidgetMut},
-    kurbo::{BezPath, Join, Line, PathEl, Point, Size, Stroke},
+    kurbo::{BezPath, Join, PathEl, Point, Size, Stroke},
     peniko::{Brush, Fill},
 };
 use xilem::{Affine, Color, style::Padding};
@@ -47,8 +47,7 @@ impl PedalsPlotWidget {
             PathEl::LineTo(Point::new(x, y))
         });
 
-        let output = move_to.into_iter().chain(throttle_inputs);
-        output
+        move_to.into_iter().chain(throttle_inputs)
     }
 
     fn brake_path(&self, height: f64) -> impl Iterator<Item = PathEl> + '_ {
@@ -63,8 +62,7 @@ impl PedalsPlotWidget {
             PathEl::LineTo(Point::new(x, y))
         });
 
-        let output = move_to.into_iter().chain(throttle_inputs);
-        output
+        move_to.into_iter().chain(throttle_inputs)
     }
 
     fn y_markers(&self, max_size: Size) -> BezPath {

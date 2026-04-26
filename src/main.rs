@@ -2,7 +2,7 @@ mod mapped_view;
 mod pedals_graph;
 mod widgets;
 
-use std::{collections::VecDeque, thread, time::Duration};
+use std::{thread, time::Duration};
 
 use compio::time::Interval;
 use futures::{StreamExt, pin_mut};
@@ -11,7 +11,7 @@ use xilem::{
     core::fork,
     dpi::LogicalSize,
     style::Style,
-    view::{CrossAxisAlignment, MainAxisAlignment, flex_col, task, task_raw},
+    view::{CrossAxisAlignment, MainAxisAlignment, flex_col, task_raw},
     winit::window::WindowLevel,
 };
 
@@ -34,12 +34,7 @@ impl AppState for State {
 }
 
 fn app_logic(state: &mut State) -> impl WidgetView<State> + use<> {
-    // let header_text = label("todos").text_size(80.);
-    let graph = pedals_graph::pedals_graph(
-        // state.receiver.clone(),
-        state.inputs,
-    )
-    .padding(8.);
+    let graph = pedals_graph::pedals_graph(state.inputs).padding(8.);
 
     let receiver = state.receiver.clone();
     let task = task_raw(
@@ -47,17 +42,15 @@ fn app_logic(state: &mut State) -> impl WidgetView<State> + use<> {
             let receiver = receiver.clone();
             async move {
                 loop {
-                    if let Ok(inputs) = receiver.recv_async().await {
-                        if let Err(err) = proxy.message(inputs) {
-                            dbg!(err);
-                        }
+                    if let Ok(inputs) = receiver.recv_async().await
+                        && let Err(err) = proxy.message(inputs)
+                    {
+                        dbg!(err);
                     }
                 }
             }
         },
         |state: &mut State, inputs: Inputs| {
-            // state.inputs.push_back(inputs);
-            // state.inputs.pop_front();
             state.inputs = inputs;
         },
     );
@@ -106,13 +99,7 @@ fn main() {
     });
 
     let event_loop = EventLoop::with_user_event();
-    let queue = VecDeque::from(
-        [Inputs {
-            id: 0,
-            throttle: 0.0,
-            brake: 100.0,
-        }; 1000],
-    );
+
     let state = State {
         receiver,
         inputs: Inputs {
