@@ -77,17 +77,5 @@ impl<State: 'static, Action: 'static> View<State, Action, ViewCtx> for PedalsPlo
         _app_state: &mut State,
     ) -> xilem::core::MessageResult<Action> {
         MessageResult::Nop
-        // match message.take_message::<Inputs>() {
-        //     Some(inputs) => {
-        //         dbg!(&inputs);
-        //         element.widget.update(*inputs);
-        //         MessageResult::RequestRebuild
-        //     }
-        //     None => {
-        //         tracing::error!("Wrong message type in Checkbox::message, got {message:?}.");
-        //         MessageResult::Stale
-        //     }
-        // }
-        // xilem::core::MessageResult::RequestRebuild
     }
 }

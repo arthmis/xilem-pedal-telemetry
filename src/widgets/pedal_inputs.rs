@@ -66,8 +66,19 @@ impl PedalsPlotWidget {
     }
 
     fn y_markers(&self, max_size: Size) -> BezPath {
-        let base = |line_height| max_size.height / 5. * line_height;
-        let heights = [base(1.), base(2.), base(3.), base(4.), base(5.)];
+        let base = |line_height| max_size.height / 10. * line_height;
+        let heights = [
+            base(1.),
+            base(2.),
+            base(3.),
+            base(4.),
+            base(5.),
+            base(6.),
+            base(7.),
+            base(8.),
+            base(9.),
+            base(10.),
+        ];
 
         let mut path = BezPath::new();
         for height in heights {
@@ -121,6 +132,20 @@ impl Widget for PedalsPlotWidget {
     type Action = ();
 
     fn register_children(&mut self, _ctx: &mut masonry::core::RegisterCtx<'_>) {}
+
+    fn on_pointer_event(
+        &mut self,
+        ctx: &mut masonry::core::EventCtx<'_>,
+        _props: &mut masonry::core::PropertiesMut<'_>,
+        event: &masonry::core::PointerEvent,
+    ) {
+        match event {
+            masonry::core::PointerEvent::Down(_) => {
+                ctx.drag_window();
+            }
+            _ => {}
+        }
+    }
 
     fn layout(
         &mut self,
