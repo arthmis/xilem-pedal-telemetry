@@ -21,7 +21,13 @@ struct State {
     receiver: flume::Receiver<Inputs>,
     inputs: Inputs,
     window_id: WindowId,
-    window_closed: bool,
+    app_running: bool,
+}
+
+impl AppState for State {
+    fn keep_running(&self) -> bool {
+        self.app_running
+    }
 }
 
 struct GameState {
@@ -29,16 +35,10 @@ struct GameState {
     ticker: Interval,
 }
 
-impl AppState for State {
-    fn keep_running(&self) -> bool {
-        true
-    }
-}
-
 fn app_logic(state: &mut State) -> impl Iterator<Item = WindowView<State>> + use<> {
     let graph = pedals_graph::pedals_graph(state.inputs).padding(8.);
     let close_button = text_button("X", |state: &mut State| {
-        state.window_closed = true;
+        state.app_running = false;
     });
 
     let receiver = state.receiver.clone();
@@ -73,10 +73,11 @@ fn app_logic(state: &mut State) -> impl Iterator<Item = WindowView<State>> + use
             .with_window_level(WindowLevel::AlwaysOnTop)
             .with_initial_inner_size(LogicalSize::new(800., 125.))
             .with_min_inner_size(LogicalSize::new(200., 100.))
+            .on_close(|state: &mut State| state.app_running = false)
     });
 
     let mut windows = vec![window_view];
-    if state.window_closed {
+    if !state.app_running {
         windows.clear();
         return windows.into_iter();
     }
@@ -128,14 +129,8 @@ fn main() {
             brake: 100.0,
         },
         window_id: WindowId::next(),
-        window_closed: false,
+        app_running: true,
     };
-    // let window_options = WindowOptions::new("Telemetry")
-    //     .with_decorations(false)
-    //     .with_window_level(WindowLevel::AlwaysOnTop)
-    //     .with_initial_inner_size(LogicalSize::new(800., 125.))
-    //     .with_min_inner_size(LogicalSize::new(200., 100.));
-    // let app = Xilem::new_simple(state, app_logic, window_options);
     let app = Xilem::new(state, app_logic);
     app.run_in(event_loop).unwrap();
 }
